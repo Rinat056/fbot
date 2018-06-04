@@ -1,0 +1,54 @@
+#!/bin/bash
+
+chat_id="XXXXXXXXX"
+bot_id="XXXXXX:XXXXXXXX"
+
+
+send_telegram () {
+curl -s -X POST https://api.telegram.org/bot$bot_id/sendMessage -d chat_id=$chat_id -d text="$1" > /dev/null
+}
+
+reboot_asic () {
+ssh -p 22 root@$1 '/sbin/reboot >/dev/null 2>&1' && send_telegram "$(date +%H:%M:%S) Асик № $asic_name был перезагружен" || send_telegram "$(date +%H:%M:%S) Асик № $asic_name не отвечает, возможно повис, требуется ручная перезагрузка, либо он уже перезагружается"
+}
+
+reboot_asicX=0
+asic_name=$(echo $1 | cut -d '.' -f 4)
+
+if [[ $2 -gt 0 ]]; then
+#echo "К асику $asic_name нет беспарольного доступа по SSH."
+send_telegram "К асику $asic_name нет беспарольного доступа по SSH."
+fi
+
+if [[ $3 -gt 0 ]];then
+#echo "Асик $asic_name не пингуется!"
+send_telegram "Асик $asic_name не пингуется!"
+fi
+
+if [[ $4 -gt 0 ]];then
+#echo "Хешрейт асика $asic_name слишком низкий ($4)."
+send_telegram "Хешрейт асика $asic_name слишком низкий ($4)."
+reboot_asicX=$(($reboot_asicX+1))
+fi
+
+if [[ $5 -gt 0 ]];then
+#echo "У асика $asic_name не удалось получить данные."
+send_telegram "У асика $1 не удалось получить данные."
+reboot_asicX=$(($reboot_asicX+1))
+fi
+
+if [ $6 -gt 0 ]|[ $7 -gt 0 ]|[ $8 -gt 0 ];then
+#echo "Асик $asic_name слишком горячий ($6/$7/$8)"
+send_telegram "Асик $asic_name слишком горячий ($6/$7/$8)"
+fi
+
+#if [ $2 -eq 0 ]&&[ $3 -eq 0 ]&&[ $4 -eq 0 ]&&[ $5 -eq 0 ]&&[ $6 -eq 0 ]&&[ $7 -eq 0 ]&&[ $8 -eq 0 ];then
+#echo "Асик $asic_name OK"
+#fi
+
+if [[ $reboot_asicX -gt 0 ]]; then
+reboot_asic
+fi
+
+exit 0
+

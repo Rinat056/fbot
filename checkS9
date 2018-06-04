@@ -1,0 +1,141 @@
+#!/bin/bash
+TT[1]=0
+TT[2]=0
+TT[3]=0
+HH=0
+NN=0
+SS=0
+PP=0
+doping () {
+            ping -c 3 $1 > /dev/null #проверяем наличие пинга
+          }
+
+dook () {
+ssh -o StrictHostKeyChecking=no -o PasswordAuthentication=no -p 22 root@$1 exit || SS=1 #проверка безпарольного доступа к асику
+answer="$(echo -n "stats" | netcat $1 4028)" || NN=1 #получение данных асика
+#echo $answer
+#Выделяем общий хешрейт асика
+ant_ghs5s=${answer#*GHS 5s=}
+ant_ghs5s=${ant_ghs5s%%,GHS av=*}
+ant_ghs5s=$(echo $ant_ghs5s | cut -d "." -f1)
+if [[ $ant_ghs5s -lt 9500 ]]; then
+HH=$ant_ghs5s
+fi
+#Ищем температуры плат (пиздец с ними бардак)
+xx=1
+temp1=${answer#*temp1=}
+temp1=${temp1%%,temp2=*}
+if [[ $temp1 -gt 0 ]]; then
+temp[$xx]=$temp1
+xx=$(($xx+1))
+fi
+temp2=${answer#*temp2=}
+temp2=${temp2%%,temp3=*}
+if [[ $temp2 -gt 0 ]]; then
+temp[$xx]=$temp2
+xx=$(($xx+1))
+fi
+temp3=${answer#*temp3=}
+temp3=${temp3%%,temp4=*}
+if [[ $temp3 -gt 0 ]]; then
+temp[$xx]=$temp3
+xx=$(($xx+1))
+fi
+temp4=${answer#*temp4=}
+temp4=${temp4%%,temp5=*}
+if [[ $temp4 -gt 0 ]]; then
+temp[$xx]=$temp4
+xx=$(($xx+1))
+fi
+temp5=${answer#*temp5=}
+temp5=${temp5%%,temp6=*}
+if [[ $temp5 -gt 0 ]]; then
+temp[$xx]=$temp5
+xx=$(($xx+1))
+fi
+temp6=${answer#*temp6=}
+temp6=${temp6%%,temp7=*}
+if [[ $temp6 -gt 0 ]]; then
+temp[$xx]=$temp6
+xx=$(($xx+1))
+fi
+temp7=${answer#*temp7=}
+temp7=${temp7%%,temp8=*}
+if [[ $temp7 -gt 0 ]]; then
+temp[$xx]=$temp7
+xx=$(($xx+1))
+fi
+temp8=${answer#*temp8=}
+temp8=${temp8%%,temp9=*}
+if [[ $temp8 -gt 0 ]]; then
+temp[$xx]=$temp8
+xx=$(($xx+1))
+fi
+temp9=${answer#*temp9=}
+temp9=${temp9%%,temp10=*}
+if [[ $temp9 -gt 0 ]]; then
+temp[$xx]=$temp9
+xx=$(($xx+1))
+fi
+temp10=${answer#*temp10=}
+temp10=${temp10%%,temp11=*}
+if [[ $temp10 -gt 0 ]]; then
+temp[$xx]=$temp10
+xx=$(($xx+1))
+fi
+temp11=${answer#*temp11=}
+temp11=${temp11%%,temp12=*}
+if [[ $temp11 -gt 0 ]]; then
+temp[$xx]=$temp11
+xx=$(($xx+1))
+fi
+temp12=${answer#*temp12=}
+temp12=${temp12%%,temp13=*}
+if [[ $temp12 -gt 0 ]]; then
+temp[$xx]=$temp12
+xx=$(($xx+1))
+fi
+temp13=${answer#*temp13=}
+temp13=${temp13%%,temp14=*}
+if [[ $temp13 -gt 0 ]]; then
+temp[$xx]=$temp13
+xx=$(($xx+1))
+fi
+temp14=${answer#*temp14=}
+temp14=${temp14%%,temp15=*}
+if [[ $temp14 -gt 0 ]]; then
+temp[$xx]=$temp14
+xx=$(($xx+1))
+fi
+temp15=${answer#*temp15=}
+temp15=${temp15%%,temp16=*}
+if [[ $temp15 -gt 0 ]]; then
+temp[$xx]=$temp15
+xx=$(($xx+1))
+fi
+temp16=${answer#*temp16=}
+temp16=${temp16%%,temp2_1=*}
+if [[ $temp16 -gt 0 ]]; then
+temp[$xx]=$temp16
+xx=$(($xx+1))
+fi
+#проверяем не перегрелись ли хэшплаты >85
+for INDEX in 1 2 3
+	    do
+        	if [[ ${temp[$INDEX]} -gt 85 ]]
+	        then
+		TT[$INDEX]=${temp[$INDEX]}
+		else
+		TT[$INDEX]=0
+		fi
+done
+        }
+
+doerror () {
+PP=1
+           }
+
+doping $1 && dook $1 || doerror
+
+#Передаем параметры для скрипта action
+bash ./action $1 $SS $PP $HH $NN ${TT[1]} ${TT[2]} ${TT[3]}
